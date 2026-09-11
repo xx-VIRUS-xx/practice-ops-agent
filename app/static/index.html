@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>practice-ops-agent demo</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 30px auto; padding: 0 16px; color: #1a1a1a; }
+    fieldset { margin-bottom: 24px; border-radius: 8px; }
+    label { display: block; margin-top: 8px; font-size: 0.9em; }
+    input, textarea, select { width: 100%; padding: 6px; margin-top: 2px; box-sizing: border-box; }
+    button { margin-top: 12px; padding: 8px 14px; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; }
+    .disclaimer { background: #fff3cd; border: 1px solid #ffe69c; padding: 10px; border-radius: 6px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>practice-ops-agent — demo UI</h1>
+  <p>Minimal form UI for manual testing. Not a production frontend (out of MVP scope per README).</p>
+
+  <label>API Key (X-API-Key)</label>
+  <input id="apiKey" placeholder="poa_..." />
+
+  <fieldset>
+    <legend>Suggest available slots</legend>
+    <label>Provider name</label><input id="slotProvider" value="Dr. Smith" />
+    <label>Day start (ISO)</label><input id="slotDayStart" value="2026-09-15T09:00:00Z" />
+    <label>Day end (ISO)</label><input id="slotDayEnd" value="2026-09-15T17:00:00Z" />
+    <button onclick="suggestSlots()">Suggest slots</button>
+    <pre id="slotResult"></pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>Billing check</legend>
+    <label>Billing code</label><input id="billingCode" value="99213" />
+    <label>Claim context</label><textarea id="claimContext" placeholder="e.g. new patient, no prior authorization"></textarea>
+    <button onclick="checkBilling()">Check billing code</button>
+    <pre id="billingResult"></pre>
+  </fieldset>
+
+  <fieldset>
+    <legend>Intake triage</legend>
+    <p class="disclaimer">Not medical advice. Routing suggestion only — does not replace clinical judgment.</p>
+    <label>Reason for visit</label><input id="reasonForVisit" value="persistent cough" />
+    <label>Symptom flags (comma-separated)</label><input id="symptomFlags" placeholder="e.g. high_fever, chest_pain" />
+    <label>Duration (days)</label><input id="durationDays" type="number" value="3" />
+    <label>Pain level (0-10)</label><input id="painLevel" type="number" value="2" />
+    <button onclick="runTriage()">Get routing suggestion</button>
+    <pre id="triageResult"></pre>
+  </fieldset>
+
+  <script>
+    function headers() {
+      return { "Content-Type": "application/json", "X-API-Key": document.getElementById("apiKey").value };
+    }
+
+    async function suggestSlots() {
+      const body = {
+        provider_name: document.getElementById("slotProvider").value,
+        day_start: document.getElementById("slotDayStart").value,
+        day_end: document.getElementById("slotDayEnd").value,
+        slot_minutes: 30,
+      };
+      const res = await fetch("/appointments/suggest-slots", { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      document.getElementById("slotResult").textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function checkBilling() {
+      const body = {
+        billing_code: document.getElementById("billingCode").value,
+        claim_context: document.getElementById("claimContext").value,
+      };
+      const res = await fetch("/billing/check", { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      document.getElementById("billingResult").textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function runTriage() {
+      const flags = document.getElementById("symptomFlags").value.split(",").map(s => s.trim()).filter(Boolean);
+      const body = {
+        reason_for_visit: document.getElementById("reasonForVisit").value,
+        symptom_flags: flags,
+        duration_days: Number(document.getElementById("durationDays").value) || null,
+        pain_level: Number(document.getElementById("painLevel").value) || null,
+      };
+      const res = await fetch("/triage/intake", { method: "POST", headers: headers(), body: JSON.stringify(body) });
+      document.getElementById("triageResult").textContent = JSON.stringify(await res.json(), null, 2);
+    }
+  </script>
+</body>
+</html>
