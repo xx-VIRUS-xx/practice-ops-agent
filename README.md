@@ -1,5 +1,7 @@
 # practice-ops-agent
 
+> System design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 A vertical AI back-office assistant for solo/small medical and dental practices:
 scheduling help, billing support (plain-language code explanations + denial-risk
 flags), and structured intake/triage routing suggestions. Built for practices too
